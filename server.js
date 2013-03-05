@@ -1,4 +1,5 @@
 ﻿var https = require('https');
+var fs = require('fs');
 
 var config = {
     host: 'linkshare.jira.com',
@@ -6,6 +7,8 @@ var config = {
     user: 'joe.sadowski',
     password: 'M0nster$'
 };
+
+var port = process.env.PORT || 8888;
 
 var auth = 'Basic ' + new Buffer(config.user+ ':' + config.password).toString('base64');
 
@@ -56,13 +59,12 @@ var tracks = [
     'Data_Exchange'
 ];
 
-
 function color(issues, theme, track) {
     var issues = matching(issues, theme, track);
     if (issues.length > 0) {
         for (var i = 0; i < issues.length; i++) {
             var issue = issues[i];
-            if (!hasPlan(issue)) return 'Red'
+            if (!hasPlan(issue)) return 'red'
         }
         return 'yellow';
     }
@@ -86,8 +88,6 @@ function matching(issues, theme, track) {
 }
 
 function matches(issue, theme, track) {
-    //console.log(issue);
-    //console.log('--------');
     var isTheme = false;
     var isTrack = false;
     for (var i = 0; i < issue.fields.labels.length; i++) {
@@ -95,20 +95,23 @@ function matches(issue, theme, track) {
         if (label == 'Theme:' + theme) { isTheme = true; }
         if (label == 'Track:' + track) { isTrack = true; }
     }
-    //console.log(issue.key + ' ' 
     return isTheme && isTrack;
 }
+
+var css = fs.readFileSync('./style.css', 'utf8');
 
 var http = require('http');
 
 var server = http.createServer(function (req, res) {
     search('Project = QR and Status not in (Closed, Resolved)', function (err, results) {
-        //console.log(results);
         res.writeHead(200, { 'content-type': 'text/html' });
         res.write('<!DOCTYPE html>');
         res.write('<html>');
         res.write('<head>');
         res.write('<title>Q4 Readyness Scorecard</title>');
+        res.write('<style type="text/css">');
+        res.write(css);
+        res.write('</style>');
         res.write('</head>');
         res.write('<body>');
 
@@ -130,12 +133,12 @@ var server = http.createServer(function (req, res) {
             res.write('<th>' + theme + '</th>');
             for (var ii = 0; ii < tracks.length; ii++) {
                 var track = tracks[ii];
-                res.write('<td style="background: ' + color(results.issues, theme, track) + ';">');
+                res.write('<td class="' + color(results.issues, theme, track) + '">');
                 var issues = matching(results.issues, theme, track);
                 res.write('<ul>');
                 for (var iii = 0; iii < issues.length; iii++) {
                     var issue = issues[iii];
-                    res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + ' - ' + issue.fields.summary + '</a>' + (hasPlan(issue) ? ' (has plan)' : '') + '</li>');
+                    res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a>' + ' ' + issue.fields.summary + (hasPlan(issue) ? ' (has plan)' : '') + '</li>');
                 }
                 res.write('</ul>');
                 res.write('</td>');
@@ -153,14 +156,6 @@ var server = http.createServer(function (req, res) {
 });
 
 
-server.listen(8888);
+server.listen(port);
 
-
-
-search('Project = QR and Status not in (Closed, Resolved)', function (err, results) {
-    for (var i = 0; i < results.issues.length; i++) {
-        var issue = results.issues[i];
-        console.log(issue.key + (hasPlan(issue) ? "Has Plan!!!!!!" : "No Plan :-("));
-        console.log(issue.fields.customfield_11910);
-    }
-});
+console.log('listening on port ' + port);
