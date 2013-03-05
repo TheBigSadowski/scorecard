@@ -1,3 +1,8 @@
-.red { background: red; }
-.yellow { background: yellow; }
-.green { background: green; }
+table, th, td { border: solid 1px #666; }
+th { background: #ddd; }
+table { border-collapse: collapse; }
+tbody th { text-align: left; }
+
+.red { background: #f55; }
+.yellow { background: #ff5; }
+.green { background: #5f5; }
