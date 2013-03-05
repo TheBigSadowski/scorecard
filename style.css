@@ -1,9 +1,13 @@
 body { font: 0.8em Helvetica, Arial, sans-serif; }
-table, th, td { border: solid 1px #666; }
-th { background: #ddd; }
+
+table, th, td { border: solid 1px #333; }
+th { background: #eee; padding: 5px; }
 table { border-collapse: collapse; }
 tbody th { text-align: left; }
 
-.red { background: #f55; }
-.yellow { background: #ff5; }
-.green { background: #5f5; }
+ul { list-style: none; padding: 0; margin: 0; }
+li { margin: 5px; }
+
+.red { background: #f88; }
+.yellow { background: #ff8; }
+.green { background: #8f8; }
