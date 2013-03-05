@@ -4,8 +4,8 @@ var fs = require('fs');
 var config = {
     host: process.env.JIRA_HOST || 'linkshare.jira.com',
     port: process.env.JIRA_PORT || 80,
-    user: process.env.JIRA_USER || 'read.only',
-    password: process.env.JIRA_PASSWORD || 'lslrocks123!'
+    user: process.env.JIRA_USER,
+    password: process.env.JIRA_PASSWORD
 };
 
 var port = process.env.PORT || 8888;
