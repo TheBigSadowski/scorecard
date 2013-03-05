@@ -13,7 +13,7 @@ var auth = 'Basic ' + new Buffer(config.user+ ':' + config.password).toString('b
 function search(jql, callback) {
     var options = {
         hostname: 'linkshare.jira.com',
-        path: '/rest/api/latest/search?jql=' + escape(jql) + '&fields=key,summary,status,labels,description',
+        path: '/rest/api/latest/search?jql=' + escape(jql) + '&fields=key,summary,status,labels,description,customfield_11910',
         headers: {
             'Authorization': auth
         }
@@ -31,15 +31,6 @@ function search(jql, callback) {
         });
     });
 }
-
-
-
-//search('Project=QR', function (err, results) {
-//    for (var i = 0; i < results.issues.length; i++) {
-//        console.log(results.issues[i]);
-//        console.log('----------------------------------------------------------------------------');
-//    }
-//});
 
 var themes = [
     'Uptime',
@@ -67,10 +58,20 @@ var tracks = [
 
 
 function color(issues, theme, track) {
-    if (matching(issues, theme, track).length > 0) {
-        return 'red';
+    var issues = matching(issues, theme, track);
+    if (issues.length > 0) {
+        for (var i = 0; i < issues.length; i++) {
+            var issue = issues[i];
+            if (!hasPlan(issue)) return 'Red'
+        }
+        return 'yellow';
     }
     return 'green';
+}
+
+function hasPlan(issue) {
+    if (!issue.fields.customfield_11910) return false;
+    return issue.fields.customfield_11910.value == 'Yes';
 }
 
 function matching(issues, theme, track) {
@@ -134,7 +135,7 @@ var server = http.createServer(function (req, res) {
                 res.write('<ul>');
                 for (var iii = 0; iii < issues.length; iii++) {
                     var issue = issues[iii];
-                    res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + ' - ' + issue.fields.summary + '</a></li>');
+                    res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + ' - ' + issue.fields.summary + '</a>' + (hasPlan(issue) ? ' (has plan)' : '') + '</li>');
                 }
                 res.write('</ul>');
                 res.write('</td>');
@@ -153,3 +154,13 @@ var server = http.createServer(function (req, res) {
 
 
 server.listen(8888);
+
+
+
+search('Project = QR and Status not in (Closed, Resolved)', function (err, results) {
+    for (var i = 0; i < results.issues.length; i++) {
+        var issue = results.issues[i];
+        console.log(issue.key + (hasPlan(issue) ? "Has Plan!!!!!!" : "No Plan :-("));
+        console.log(issue.fields.customfield_11910);
+    }
+});
