@@ -1,0 +1,8 @@
+﻿{
+  "name": "scorecard",
+  "version": "0.0.0",
+  "description": "A visual guide for the scorecard",
+  "dependencies" : {
+    "jira"   :  "*"
+  }
+}
