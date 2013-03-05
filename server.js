@@ -99,7 +99,7 @@ function matches(issue, theme, track) {
     for (var i = 0; i < issue.fields.labels.length; i++) {
         var label = issue.fields.labels[i];
         if (label == 'Theme:' + theme) { isTheme = true; }
-        if (label == 'Track:' + track) { isTrack = true; }
+        if (track == null || label == 'Track:' + track) { isTrack = true; }
     }
     return isTheme && isTrack;
 }
@@ -107,7 +107,7 @@ function matches(issue, theme, track) {
 var css = fs.readFileSync('./style.css', 'utf8');
 
 var server = http.createServer(function (req, res) {
-    search('Project = QR and Status not in (Closed, Resolved)', function (err, results) {
+    search('Project = QR and Status not in (Closed, Resolved) ORDER BY Rank ASC', function (err, results) {
         if (err) {
             res.writeHead(500, { 'content-type': 'text/plain' });
             res.end('Something went very wrong reading from jira. This is probably a configuration issue or maybe you crossed the streams... Please check the configuration.');
@@ -159,6 +159,56 @@ var server = http.createServer(function (req, res) {
 
         res.write('</table>');
 
+		res.write('<p><a href="https://linkshare.jira.com/secure/RapidBoard.jspa?rapidView=118">Manage scorecard issues</a>')
+
+        res.write('<table>');
+
+        res.write('<thead>');
+        res.write('<tr>');
+        res.write('<th>Theme</th>');
+        res.write('<th>All Tracks</th>');
+        res.write('</tr>');
+        res.write('</thead>');
+
+        res.write('<tbody>');
+        for (var i = 0; i < themes.length; i++) {
+            var theme = themes[i];
+            res.write('<tr>');
+            res.write('<th>' + theme + '</th>');
+            res.write('<td class="' + color(results.issues, theme) + '">');
+            var issues = matching(results.issues, theme);
+            res.write('<ul>');
+            for (var iii = 0; iii < issues.length; iii++) {
+                var issue = issues[iii];
+                res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a>' + ' ' + issue.fields.summary + (hasPlan(issue) ? ' (has plan)' : '') + '</li>');
+            }
+            res.write('</ul>');
+            res.write('</td>');
+            res.write('</tr>');
+        }
+        res.write('</tbody>');
+
+        res.write('</table>');
+
+        res.write('<table>');
+
+        res.write('<thead>');
+        res.write('<tr>');
+        res.write('<th>Issue</th>');
+        res.write('</tr>');
+        res.write('</thead>');
+
+        res.write('<tbody>');
+        for (var i = 0; i < results.issues.length; i++) {
+			var issue = results.issues[i];
+            res.write('<tr>');
+            res.write('<th>' + issue.key + ' ' + issue.fields.summary + '</th>');
+            res.write('</tr>');
+        }
+        res.write('</tbody>');
+
+        res.write('</table>');
+
         res.write('</body>');
         res.write('</html>');
         res.end();
@@ -168,3 +218,45 @@ var server = http.createServer(function (req, res) {
 
 server.listen(port);
 console.log('listening on port ' + port);
+
+
+function jira(path, callback) {
+	var options = {
+	    hostname: 'linkshare.jira.com',
+	    path: path,
+	    headers: {
+	        'Authorization': auth
+	    }
+	};
+
+	https.get(options, function (res) {
+	    res.setEncoding('utf8');
+	    res.data = ''
+	    res.on('data', function (chunk) {
+	        res.data += chunk;
+	    });
+	    res.on('end', function () {
+			try {
+				var data = JSON.parse(res.data);
+				callback(null, data);
+			} catch (err) {
+				callback(err);
+			}
+	    });
+	});
+}
+
+/*
+jira('/rest/api/latest/field', function(err, data) {
+	for (var i = 0; i < data.length; i++) {
+		if (data[i].schema && data[i].schema.customId = 230948) { 
+			console.log(data[i]); 
+		}
+	}
+});
+
+jira('/rest/api/latest/customFieldOption/11911', function(err, data) {
+	console.log(data);
+});
+
+*/
