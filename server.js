@@ -2,10 +2,10 @@
 var fs = require('fs');
 
 var config = {
-    host: 'linkshare.jira.com',
-    port: 80,
-    user: 'joe.sadowski',
-    password: 'M0nster$'
+    host: process.env.JIRA_HOST || 'linkshare.jira.com',
+    port: process.env.JIRA_PORT || 80,
+    user: process.env.JIRA_USER || 'read.only',
+    password: process.env.JIRA_PASSWORD || 'lslrocks123!'
 };
 
 var port = process.env.PORT || 8888;
@@ -29,8 +29,13 @@ function search(jql, callback) {
             res.data += chunk;
         });
         res.on('end', function () {
-            var data = JSON.parse(res.data);
-            callback(null, data);
+            try {
+                var data = JSON.parse(res.data);
+                callback(null, data);
+            } catch (err) {
+                err.response = res.data;
+                callback(err);
+            }
         });
     });
 }
@@ -104,6 +109,11 @@ var http = require('http');
 
 var server = http.createServer(function (req, res) {
     search('Project = QR and Status not in (Closed, Resolved)', function (err, results) {
+        if (err) {
+            res.writeHead(500, { 'content-type': 'text/plain' });
+            res.end('Something went very wrong reading from jira. This is probably a configuration issue or maybe you crossed the streams... Please check the configuration.');
+            return;
+        }
         res.writeHead(200, { 'content-type': 'text/html' });
         res.write('<!DOCTYPE html>');
         res.write('<html>');
