@@ -1,4 +1,5 @@
 ﻿var https = require('https');
+var http = require('http');
 var fs = require('fs');
 
 var config = {
@@ -104,8 +105,6 @@ function matches(issue, theme, track) {
 }
 
 var css = fs.readFileSync('./style.css', 'utf8');
-
-var http = require('http');
 
 var server = http.createServer(function (req, res) {
     search('Project = QR and Status not in (Closed, Resolved)', function (err, results) {
