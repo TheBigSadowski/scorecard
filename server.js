@@ -122,7 +122,7 @@ var server = http.createServer(function (req, res) {
         res.write('<style type="text/css">');
         res.write(css);
         res.write('</style>');
-        res.write('<meta http-equiv="refresh" content="10">')
+        res.write('<meta http-equiv="refresh" content="60">')
         res.write('</head>');
         res.write('<body>');
 
