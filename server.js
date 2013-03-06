@@ -107,7 +107,8 @@ function matches(issue, theme, track) {
 var css = fs.readFileSync('./style.css', 'utf8');
 
 var server = http.createServer(function (req, res) {
-    search('Project = QR and Status not in (Closed, Resolved) ORDER BY Rank ASC', function (err, results) {
+	var jql = 'labels in (' + getThemesForQuery() + ') and Status not in (Closed, Resolved) ORDER BY Rank ASC';
+    search(jql, function (err, results) {
         if (err) {
             res.writeHead(500, { 'content-type': 'text/plain' });
             res.end('Something went very wrong reading from jira. This is probably a configuration issue or maybe you crossed the streams... Please check the configuration.');
@@ -244,6 +245,14 @@ function jira(path, callback) {
 			}
 	    });
 	});
+}
+
+function getThemesForQuery() {
+	var result = '"Theme:' + themes[0] + '"';
+	for (var i = 1; i< themes.length; i++) {
+		result += ', "Theme:' + themes[i] + '"';
+	}
+	return result;
 }
 
 /*
