@@ -195,17 +195,21 @@ var server = http.createServer(function (req, res) {
 
         res.write('<thead>');
         res.write('<tr>');
-        res.write('<th>Issue</th>');
+        res.write('<th>All Open Issues</th>');
         res.write('</tr>');
         res.write('</thead>');
 
         res.write('<tbody>');
+        res.write('<tr>');
+		res.write('<th>')
+		res.write('<ul>');
         for (var i = 0; i < results.issues.length; i++) {
 			var issue = results.issues[i];
-            res.write('<tr>');
-            res.write('<th>' + issue.key + ' ' + issue.fields.summary + '</th>');
-            res.write('</tr>');
+            res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a>' + ' ' + issue.fields.summary + (hasPlan(issue) ? ' (has plan)' : '') + '</li>');
         }
+		res.write('</ul>');
+		res.write('</th>')
+        res.write('</tr>');
         res.write('</tbody>');
 
         res.write('</table>');
