@@ -56,13 +56,13 @@ var themes = [
 ];
 
 var tracks = [
-    'Billing-Payments',
-    'Tracking',
-    'Dashboards',
-    'Linktranet',
-    'Custom_Reporting',
-    'Analytics',
-    'Data_Exchange'
+    'BP',
+    'TRK',
+    'Dashboard',
+    'LNK',
+    'CR',
+    'ANA',
+    'DX'
 ];
 
 function color(issues, theme, track) {
