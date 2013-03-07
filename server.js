@@ -98,7 +98,7 @@ function matches(issue, theme, track) {
     var isTrack = false;
     for (var i = 0; i < issue.fields.labels.length; i++) {
         var label = issue.fields.labels[i];
-        if (label == 'Theme:' + theme) { isTheme = true; }
+        if (theme == null || label == 'Theme:' + theme) { isTheme = true; }
         if (track == null || label == 'Track:' + track) { isTrack = true; }
     }
     return isTheme && isTrack;
@@ -132,7 +132,9 @@ var server = http.createServer(function (req, res) {
         res.write('<tr>');
         res.write('<th>Theme</th>');
         for (var i = 0; i < tracks.length; i++) {
-            res.write('<th>' + tracks[i] + '</th>');
+            var track = tracks[i];
+            var issues = matching(results.issues, null, track);
+            res.write('<th>' + track + ' (' + issues.length + ' open)</th>');
         }
         res.write('</tr>');
         res.write('</thead>');
@@ -140,8 +142,9 @@ var server = http.createServer(function (req, res) {
         res.write('<tbody>');
         for (var i = 0; i < themes.length; i++) {
             var theme = themes[i];
+            var themeIssues = matching(results.issues, theme);
             res.write('<tr>');
-            res.write('<th>' + theme + '</th>');
+            res.write('<th>' + theme + ' (' + themeIssues.length + ' open)</th>');
             for (var ii = 0; ii < tracks.length; ii++) {
                 var track = tracks[ii];
                 res.write('<td class="' + color(results.issues, theme, track) + '">');
@@ -167,7 +170,7 @@ var server = http.createServer(function (req, res) {
         res.write('<thead>');
         res.write('<tr>');
         res.write('<th>Theme</th>');
-        res.write('<th>All Tracks</th>');
+        res.write('<th>All Tracks (' + results.issues.length  + ' open)</th>');
         res.write('</tr>');
         res.write('</thead>');
 
@@ -195,7 +198,7 @@ var server = http.createServer(function (req, res) {
 
         res.write('<thead>');
         res.write('<tr>');
-        res.write('<th>All Open Issues</th>');
+        res.write('<th>All Open Issues (' + results.issues.length  + ')</th>');
         res.write('</tr>');
         res.write('</thead>');
 
