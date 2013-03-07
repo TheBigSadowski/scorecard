@@ -118,7 +118,7 @@ var server = http.createServer(function (req, res) {
         res.write('<!DOCTYPE html>');
         res.write('<html>');
         res.write('<head>');
-        res.write('<title>Q4 Readyness Scorecard</title>');
+        res.write('<title>Q4 Readiness Scorecard</title>');
         res.write('<style type="text/css">');
         res.write(css);
         res.write('</style>');
