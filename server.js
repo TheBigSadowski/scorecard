@@ -17,7 +17,7 @@ var auth = 'Basic ' + new Buffer(config.user+ ':' + config.password).toString('b
 function search(jql, callback) {
     var options = {
         hostname: 'linkshare.jira.com',
-        path: '/rest/api/latest/search?jql=' + escape(jql) + '&fields=key,summary,status,labels,description,customfield_11910',
+        path: '/rest/api/latest/search?jql=' + escape(jql) + '&fields=key,summary,status,labels,description,customfield_11910&maxResults=1000',
         headers: {
             'Authorization': auth
         }
@@ -107,7 +107,7 @@ function matches(issue, theme, track) {
 var css = fs.readFileSync('./style.css', 'utf8');
 
 var server = http.createServer(function (req, res) {
-	var jql = 'labels in (' + getThemesForQuery() + ') and Status not in (Closed, Resolved) ORDER BY Rank ASC';
+    var jql = 'labels in (' + getThemesForQuery() + ') and Status not in (Closed, Resolved) ORDER BY Rank ASC';
     search(jql, function (err, results) {
         if (err) {
             res.writeHead(500, { 'content-type': 'text/plain' });
