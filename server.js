@@ -102,6 +102,7 @@ var server = http.createServer(function (req, res) {
 			
 			_.chain(results)
 				.where({ archived: false })
+				.filter(function(version) { return (!version.archived) && version.releaseDate; })
 				.sortBy(function(version) { return version.releaseDate; })
 				.reverse()
 				.each(function(version) {
