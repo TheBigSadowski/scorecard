@@ -1,6 +1,7 @@
 ﻿var https = require('https');
 var http = require('http');
 var fs = require('fs');
+var _ = require('underscore');
 
 var config = {
     host: process.env.JIRA_HOST || 'linkshare.jira.com',
@@ -107,6 +108,42 @@ function matches(issue, theme, track) {
 var css = fs.readFileSync('./style.css', 'utf8');
 
 var server = http.createServer(function (req, res) {
+	if (req.url == '/releases') {
+		//var jql = 'labels in (' + getThemesForQuery() + ') and Status not in (Closed, Resolved) ORDER BY Rank ASC';
+		jira('/rest/api/latest/project/PB/versions', function (err, results) {
+	        res.writeHead(200, { 'content-type': 'text/html' });
+	        res.write('<!DOCTYPE html>');
+	        res.write('<html>');
+	        res.write('<head>');
+	        res.write('<title>Q4 Readiness Scorecard</title>');
+	        res.write('<style type="text/css">');
+	        res.write(css);
+	        res.write('</style>');
+	        res.write('<meta http-equiv="refresh" content="60">')
+	        res.write('</head>');
+	        res.write('<body>');
+			
+			console.log(results);
+			_.chain(results)
+				.where({ archived: false })
+				.sortBy(function(version) { return version.releaseDate; })
+				.reverse()
+				.each(function(version) {
+					res.write('<h1>' + version.name);
+					if (version.released) { 
+						res.write(' (released)'); 
+					}
+					res.write('</h1>');
+					res.write('<p>release date: ' + version.releaseDate);
+					res.write('<p>' + version.description)
+				});
+			res.write('There should be something here');
+			res.write('</body>');
+			res.write('</html>');
+			res.end();
+		});
+		return;
+	}
     var jql = 'labels in (' + getThemesForQuery() + ') and Status not in (Closed, Resolved) ORDER BY Rank ASC';
     search(jql, function (err, results) {
         if (err) {
@@ -125,6 +162,11 @@ var server = http.createServer(function (req, res) {
         res.write('<meta http-equiv="refresh" content="60">')
         res.write('</head>');
         res.write('<body>');
+
+        var url = require('url').parse(req.url, true);
+        if (url.query.track) {
+            res.write('<p>Track:' + url.query.track);
+        }
 
         res.write('<table>');
 
@@ -261,18 +303,3 @@ function getThemesForQuery() {
 	}
 	return result;
 }
-
-/*
-jira('/rest/api/latest/field', function(err, data) {
-	for (var i = 0; i < data.length; i++) {
-		if (data[i].schema && data[i].schema.customId = 230948) { 
-			console.log(data[i]); 
-		}
-	}
-});
-
-jira('/rest/api/latest/customFieldOption/11911', function(err, data) {
-	console.log(data);
-});
-
-*/
