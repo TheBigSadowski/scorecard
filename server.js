@@ -116,7 +116,7 @@ var server = http.createServer(function (req, res) {
 					res.write('<ul>');
 					_(version.issues.issues)
 						.each(function(issue) {
-							res.write('<li>' + issue.key + ' - ' + issue.fields.summary);
+							res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a> - ' + issue.fields.summary);
 						});
 					res.write('</ul>');
 				});
