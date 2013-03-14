@@ -2,6 +2,7 @@
 var http = require('http');
 var fs = require('fs');
 var _ = require('underscore');
+var async = require('async');
 
 var config = {
 	host: process.env.JIRA_HOST || 'linkshare.jira.com',
@@ -86,8 +87,7 @@ var css = fs.readFileSync('./style.css', 'utf8');
 
 var server = http.createServer(function (req, res) {
 	if (req.url == '/releases') {
-		//var jql = 'labels in (' + getThemesForQuery() + ') and Status not in (Closed, Resolved) ORDER BY Rank ASC';
-		jira('/rest/api/latest/project/PB/versions', function (err, results) {
+		getVersions('PB', function(err, results) {
 			res.writeHead(200, { 'content-type': 'text/html' });
 			res.write('<!DOCTYPE html>');
 			res.write('<html>');
@@ -112,9 +112,13 @@ var server = http.createServer(function (req, res) {
 					res.write('</h1>');
 					res.write('<p>release date: ' + version.releaseDate);
 					res.write('<p>' + version.description)
+					res.write('<ul>');
+					_(version.issues.issues)
+						.each(function(issue) {
+							res.write('<li>' + issue.key + ' - ' + issue.fields.summary);
+						});
+					res.write('</ul>');
 				});
-			res.write('</body>');
-			res.write('</html>');
 			res.end();
 		});
 		return;
@@ -278,3 +282,39 @@ function getThemesForQuery() {
 	}
 	return result;
 }
+
+
+function getVersions(project, callback) {
+	jira('/rest/api/latest/project/' + project + '/versions', function (err, results) {
+		async.map(results, function(version, callback) {
+			search('fixVersion = ' + version.id + ' AND issuetype in standardIssueTypes()', function(err, issues) {
+				version.issues = issues;
+				callback(null, version);
+			});
+		}, function(err, mapped) {
+			callback(err, mapped);
+		});
+	});
+}
+
+/*
+jira('/rest/api/latest/field', function (err, results) {
+	_(results).each(function (field) {
+		console.log(field.name + ' => ' + field.id);
+	})
+});
+
+getVersions('PB', function(err, results) {
+	_.chain(results)
+		.where({ archived: false })
+		.sortBy(function(version) { return version.releaseDate; })
+		.reverse()
+		.each(function(version) {
+			console.log(version.name);
+			_(version.issues.issues)
+				.each(function(issue) {
+					console.log('  ' + issue.fields.summary);
+				});
+		});
+});
+*/
