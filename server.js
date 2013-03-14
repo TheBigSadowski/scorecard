@@ -14,7 +14,6 @@ var port = process.env.PORT || 8888;
 
 var auth = 'Basic ' + new Buffer(config.user+ ':' + config.password).toString('base64');
 
-
 function search(jql, callback) {
 	var path = '/rest/api/latest/search?jql=' + escape(jql) + '&fields=key,summary,status,labels,description,customfield_11910&maxResults=1000';
 	jira(path, callback);
