@@ -16,30 +16,8 @@ var auth = 'Basic ' + new Buffer(config.user+ ':' + config.password).toString('b
 
 
 function search(jql, callback) {
-	var options = {
-		hostname: 'linkshare.jira.com',
-		path: '/rest/api/latest/search?jql=' + escape(jql) + '&fields=key,summary,status,labels,description,customfield_11910&maxResults=1000',
-		headers: {
-			'Authorization': auth
-		}
-	};
-
-	https.get(options, function (res) {
-		res.setEncoding('utf8');
-		res.data = ''
-		res.on('data', function (chunk) {
-			res.data += chunk;
-		});
-		res.on('end', function () {
-			try {
-				var data = JSON.parse(res.data);
-				callback(null, data);
-			} catch (err) {
-				err.response = res.data;
-				callback(err);
-			}
-		});
-	});
+	var path = '/rest/api/latest/search?jql=' + escape(jql) + '&fields=key,summary,status,labels,description,customfield_11910&maxResults=1000';
+	jira(path, callback);
 }
 
 var themes = [
@@ -123,7 +101,6 @@ var server = http.createServer(function (req, res) {
 			res.write('</head>');
 			res.write('<body>');
 			
-			console.log(results);
 			_.chain(results)
 				.where({ archived: false })
 				.sortBy(function(version) { return version.releaseDate; })
@@ -137,7 +114,6 @@ var server = http.createServer(function (req, res) {
 					res.write('<p>release date: ' + version.releaseDate);
 					res.write('<p>' + version.description)
 				});
-			res.write('There should be something here');
 			res.write('</body>');
 			res.write('</html>');
 			res.end();
