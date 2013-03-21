@@ -206,7 +206,7 @@ var server = http.createServer(function (req, res) {
 			res.write('<ul>');
 			for (var iii = 0; iii < issues.length; iii++) {
 				var issue = issues[iii];
-				res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a>' + ' ' + issue.fields.summary + (hasPlan(issue) ? ' (has plan)' : '') + '</li>');
+				res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a>' + ' ' + issue.fields.summary + (hasPlan(issue) ? ' (has plan)' : '') + ' (' + issue.fields.status.name + ' - ' + (issue.fields.assignee ? issue.fields.assignee.displayName : '') + ')</li>');
 			}
 			res.write('</ul>');
 			res.write('</td>');
@@ -230,7 +230,7 @@ var server = http.createServer(function (req, res) {
 		res.write('<ul>');
 		for (var i = 0; i < results.issues.length; i++) {
 			var issue = results.issues[i];
-			res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a>' + ' ' + issue.fields.summary + (hasPlan(issue) ? ' (has plan)' : '') + '</li>');
+			res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a>' + ' ' + issue.fields.summary + (hasPlan(issue) ? ' (has plan)' : '') + ' (' + issue.fields.status.name + ' - ' + (issue.fields.assignee ? issue.fields.assignee.displayName : '') + ')</li>');
 		}
 		res.write('</ul>');
 		res.write('</th>')
