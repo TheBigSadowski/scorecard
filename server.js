@@ -174,8 +174,6 @@ var server = http.createServer(function (req, res) {
 				res.write('<ul>');
 				for (var iii = 0; iii < issues.length; iii++) {
 					var issue = issues[iii];
-					console.log(issue.fields.assignee);
-					//console.log(issue.fields.status);
 					res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a>' + ' ' + issue.fields.summary + (hasPlan(issue) ? ' (has plan)' : '') + ' (' + issue.fields.status.name + ' - ' + (issue.fields.assignee ? issue.fields.assignee.displayName : '') + ')</li>');
 				}
 				res.write('</ul>');
