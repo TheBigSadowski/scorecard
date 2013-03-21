@@ -16,7 +16,7 @@ var port = process.env.PORT || 8888;
 var auth = 'Basic ' + new Buffer(config.user+ ':' + config.password).toString('base64');
 
 function search(jql, callback) {
-	var path = '/rest/api/latest/search?jql=' + escape(jql) + '&fields=key,summary,status,labels,description,customfield_11910&maxResults=1000';
+	var path = '/rest/api/latest/search?jql=' + escape(jql) + '&fields=key,summary,status,labels,description,customfield_11910,assignee&maxResults=1000';
 	jira(path, callback);
 }
 
@@ -174,7 +174,9 @@ var server = http.createServer(function (req, res) {
 				res.write('<ul>');
 				for (var iii = 0; iii < issues.length; iii++) {
 					var issue = issues[iii];
-					res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a>' + ' ' + issue.fields.summary + (hasPlan(issue) ? ' (has plan)' : '') + '</li>');
+					console.log(issue.fields.assignee);
+					//console.log(issue.fields.status);
+					res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a>' + ' ' + issue.fields.summary + (hasPlan(issue) ? ' (has plan)' : '') + ' (' + issue.fields.status.name + ' - ' + (issue.fields.assignee ? issue.fields.assignee.displayName : '') + ')</li>');
 				}
 				res.write('</ul>');
 				res.write('</td>');
@@ -317,5 +319,18 @@ getVersions('PB', function(err, results) {
 					console.log('  ' + issue.fields.summary);
 				});
 		});
+});
+
+getVersions('PB', function(err, results) {
+	_(results).each(function(version) {
+		console.log(version.description);
+	});
+});
+
+search('Sprint in closedSprints()', function(err, results) {
+	console.log('Closed sprints:');
+	_(results.issues).each(function(issue) {
+		console.log(issue)
+	});
 });
 */
