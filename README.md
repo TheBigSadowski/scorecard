@@ -6,7 +6,9 @@ An automatically updating scorecard for judging Q4 readiness.
 
 ## 1) Install dependancies:
 You need to have node.js installed if you don't, you can get it from here: http://nodejs.org/
+
 After node.js is installed, from the command line, you execute:
+
     npm install
 
 ## 2) Set environment variables:
