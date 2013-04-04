@@ -16,32 +16,48 @@ var port = process.env.PORT || 8888;
 var auth = 'Basic ' + new Buffer(config.user+ ':' + config.password).toString('base64');
 
 function search(jql, callback) {
-	var path = '/rest/api/latest/search?jql=' + escape(jql) + '&fields=key,summary,status,labels,description,customfield_11910,assignee&maxResults=1000';
+	var path = '/rest/api/latest/search?jql=' + escape(jql) + '&fields=key,summary,status,labels,description,customfield_11910,assignee,components&maxResults=1000';
 	jira(path, callback);
 }
 
+var component = function (name) {
+	return function(issue) {
+		return _(issue.fields.components).some(function (c) { return c.name == name; });
+	};
+};
+
+var label = function (name) {
+	return function(issue) {
+		return _(issue.fields.labels).contains(name);
+	};
+};
+
+var theme = function (name) {
+	return { name: name, matches: label('Theme:'+name) };
+}
+
 var themes = [
-	'Uptime',
-	'HA-Automated_Failover',
-	'Quality',
-	'On_Time',
-	'Performance',
-	'HA-No_Outage_Deployment',
-	'Capacity',
-	'Infrastructure_Upgrade',
-	'Compliance',
-	'Security',
-	'Data_Retention'
+	theme('Uptime'),
+	theme('HA-Automated_Failover'),
+	theme('Quality'),
+	theme('On_Time'),
+	theme('Performance'),
+	theme('HA-No_Outage_Deployment'),
+	theme('Capacity'),
+	theme('Infrastructure_Upgrade'),
+	theme('Compliance'),
+	theme('Security'),
+	theme('Data_Retention')
 ];
 
 var tracks = [
-	'BP',
-	'TRK',
-	'Dashboard',
-	'LNK',
-	'CR',
-	'ANA',
-	'DX'
+	{ name: 'BP', matches: component('Billing & Payments') },
+	{ name: 'Tracking', matches: component('Tracking') },
+	{ name: 'Dashboard', matches: component('UX') },
+	{ name: 'LNK', matches: label("Track:LNK") },
+	{ name: 'CR', matches: label('Track:LNK') },
+	{ name: 'ANA', matches: component('Analytics') },
+	{ name: 'DX', matches: component('Data Exchange') }
 ];
 
 function color(issues, theme, track) {
@@ -62,71 +78,21 @@ function hasPlan(issue) {
 }
 
 function matching(issues, theme, track) {
-	var results = [];
-	for (var i = 0; i < issues.length; i++) {
-		var issue = issues[i];
-		if (matches(issue, theme, track)) {
-			results.push(issue);
-		}
-	}
-	return results;
+	return _(issues).filter(function (issue) { return matches(issue, theme, track); });
 }
 
 function matches(issue, theme, track) {
-	var isTheme = false;
-	var isTrack = false;
-	for (var i = 0; i < issue.fields.labels.length; i++) {
-		var label = issue.fields.labels[i];
-		if (theme == null || label == 'Theme:' + theme) { isTheme = true; }
-		if (track == null || label == 'Track:' + track) { isTrack = true; }
-	}
-	return isTheme && isTrack;
+	return (theme == null || theme.matches(issue))
+		&& (track == null || track.matches(issue));
 }
 
 var css = fs.readFileSync('./style.css', 'utf8');
 
 var server = http.createServer(function (req, res) {
-	if (req.url == '/releases') {
-		getVersions('PB', function(err, results) {
-			res.writeHead(200, { 'content-type': 'text/html' });
-			res.write('<!DOCTYPE html>');
-			res.write('<html>');
-			res.write('<head>');
-			res.write('<title>Q4 Readiness Scorecard</title>');
-			res.write('<style type="text/css">');
-			res.write(css);
-			res.write('</style>');
-			res.write('<meta http-equiv="refresh" content="60">')
-			res.write('</head>');
-			res.write('<body>');
-			
-			_.chain(results)
-				.where({ archived: false })
-				.filter(function(version) { return (!version.archived) && version.releaseDate; })
-				.sortBy(function(version) { return version.releaseDate; })
-				.reverse()
-				.each(function(version) {
-					res.write('<h1>' + version.name);
-					if (version.released) { 
-						res.write(' (released)'); 
-					}
-					res.write('</h1>');
-					res.write('<p>release date: ' + version.releaseDate);
-					res.write('<p>' + version.description)
-					res.write('<ul>');
-					_(version.issues.issues)
-						.each(function(issue) {
-							res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a> - ' + issue.fields.summary);
-						});
-					res.write('</ul>');
-				});
-			res.end();
-		});
-		return;
-	}
 	var jql = 'labels in (' + getThemesForQuery() + ') and Status not in (Closed, Resolved) ORDER BY Rank ASC';
 	search(jql, function (err, results) {
 		if (err) {
+			throw err;
 			res.writeHead(500, { 'content-type': 'text/plain' });
 			res.end('Something went very wrong reading from jira. This is probably a configuration issue or maybe you crossed the streams... Please check the configuration.');
 			return;
@@ -156,7 +122,7 @@ var server = http.createServer(function (req, res) {
 		for (var i = 0; i < tracks.length; i++) {
 			var track = tracks[i];
 			var issues = matching(results.issues, null, track);
-			res.write('<th>' + track + ' (' + issues.length + ' open)</th>');
+			res.write('<th>' + track.name + ' (' + issues.length + ' open)</th>');
 		}
 		res.write('</tr>');
 		res.write('</thead>');
@@ -166,7 +132,7 @@ var server = http.createServer(function (req, res) {
 			var theme = themes[i];
 			var themeIssues = matching(results.issues, theme);
 			res.write('<tr>');
-			res.write('<th>' + theme + ' (' + themeIssues.length + ' open)</th>');
+			res.write('<th>' + theme.name + ' (' + themeIssues.length + ' open)</th>');
 			for (var ii = 0; ii < tracks.length; ii++) {
 				var track = tracks[ii];
 				res.write('<td class="' + color(results.issues, theme, track) + '">');
@@ -200,7 +166,7 @@ var server = http.createServer(function (req, res) {
 		for (var i = 0; i < themes.length; i++) {
 			var theme = themes[i];
 			res.write('<tr>');
-			res.write('<th>' + theme + '</th>');
+			res.write('<th>' + theme.name + '</th>');
 			res.write('<td class="' + color(results.issues, theme) + '">');
 			var issues = matching(results.issues, theme);
 			res.write('<ul>');
@@ -277,11 +243,7 @@ function jira(path, callback) {
 }
 
 function getThemesForQuery() {
-	var result = '"Theme:' + themes[0] + '"';
-	for (var i = 1; i< themes.length; i++) {
-		result += ', "Theme:' + themes[i] + '"';
-	}
-	return result;
+	return _(themes).map(function(t) { return '"Theme:'+t.name+'"'; }).join(', ');
 }
 
 
