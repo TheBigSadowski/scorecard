@@ -22,7 +22,7 @@ function search(jql, callback) {
 
 var component = function (name) {
 	return function(issue) {
-		return _(issue.fields.components).some(function (c) { return c.name == name; });
+		return _(issue.fields.components).any(function (c) { return c.name == name; });
 	};
 };
 
@@ -61,18 +61,12 @@ var tracks = [
 ];
 
 function color(issues, theme, track) {
-	var issues = matching(issues, theme, track);
-	if (issues.length > 0) {
-		return _(issues).all(hasPlan)
+	//var issues = matching(issues, theme, track);
+	return issues.length == 0
+		? 'green'
+		: _(issues).all(hasPlan)
 			? 'yellow'
 			: 'red';
-		/*for (var i = 0; i < issues.length; i++) {
-			var issue = issues[i];
-			if (!hasPlan(issue)) return 'red'
-		}
-		return 'yellow';*/
-	}
-	return 'green';
 }
 
 function hasPlan(issue) {
@@ -100,6 +94,9 @@ var server = http.createServer(function (req, res) {
 			res.end('Something went very wrong reading from jira. This is probably a configuration issue or maybe you crossed the streams... Please check the configuration.');
 			return;
 		}
+		res.writeIssueListItem = function (issue) {
+			res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a>' + ' ' + issue.fields.summary + (hasPlan(issue) ? ' (has plan)' : '') + ' (' + issue.fields.status.name + ' - ' + (issue.fields.assignee ? issue.fields.assignee.displayName : '') + ')</li>');
+		};
 		res.writeHead(200, { 'content-type': 'text/html' });
 		res.write('<!DOCTYPE html>');
 		res.write('<html>');
@@ -112,100 +109,73 @@ var server = http.createServer(function (req, res) {
 		res.write('</head>');
 		res.write('<body>');
 
-		var url = require('url').parse(req.url, true);
-		if (url.query.track) {
-			res.write('<p>Track:' + url.query.track);
-		}
-
 		res.write('<table>');
-
 		res.write('<thead>');
 		res.write('<tr>');
 		res.write('<th>Theme</th>');
-		for (var i = 0; i < tracks.length; i++) {
-			var track = tracks[i];
-			var issues = matching(results.issues, null, track);
+		_(tracks).each(function (track) {
+			var issues = matching(results.issues, track);
 			res.write('<th>' + track.name + ' (' + issues.length + ' open)</th>');
-		}
+		});
 		res.write('</tr>');
 		res.write('</thead>');
-
 		res.write('<tbody>');
-		for (var i = 0; i < themes.length; i++) {
-			var theme = themes[i];
+		_(themes).each(function (theme) {
 			var themeIssues = matching(results.issues, theme);
 			res.write('<tr>');
 			res.write('<th>' + theme.name + ' (' + themeIssues.length + ' open)</th>');
-			for (var ii = 0; ii < tracks.length; ii++) {
-				var track = tracks[ii];
-				res.write('<td class="' + color(results.issues, theme, track) + '">');
-				var issues = matching(results.issues, theme, track);
+			_(tracks).each(function (track) {
+				var issues = matching(themeIssues, track);
+				res.write('<td class="' + color(issues) + '">');
 				res.write('<ul>');
-				for (var iii = 0; iii < issues.length; iii++) {
-					var issue = issues[iii];
-					res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a>' + ' ' + issue.fields.summary + (hasPlan(issue) ? ' (has plan)' : '') + ' (' + issue.fields.status.name + ' - ' + (issue.fields.assignee ? issue.fields.assignee.displayName : '') + ')</li>');
-				}
+				_(issues).each(res.writeIssueListItem);
 				res.write('</ul>');
 				res.write('</td>');
-			}
+			});
 			res.write('</tr>');
-		}
+		});
 		res.write('</tbody>');
-
 		res.write('</table>');
 
 		res.write('<p><a href="https://linkshare.jira.com/secure/RapidBoard.jspa?rapidView=118">Manage scorecard issues</a>')
 
 		res.write('<table>');
-
 		res.write('<thead>');
 		res.write('<tr>');
 		res.write('<th>Theme</th>');
 		res.write('<th>All Tracks (' + results.issues.length  + ' open)</th>');
 		res.write('</tr>');
 		res.write('</thead>');
-
 		res.write('<tbody>');
-		for (var i = 0; i < themes.length; i++) {
-			var theme = themes[i];
+		_(themes).each(function (theme) {
+			var issues = matching(results.issues, theme);
 			res.write('<tr>');
 			res.write('<th>' + theme.name + '</th>');
-			res.write('<td class="' + color(results.issues, theme) + '">');
-			var issues = matching(results.issues, theme);
+			res.write('<td class="' + color(issues) + '">');
 			res.write('<ul>');
-			for (var iii = 0; iii < issues.length; iii++) {
-				var issue = issues[iii];
-				res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a>' + ' ' + issue.fields.summary + (hasPlan(issue) ? ' (has plan)' : '') + ' (' + issue.fields.status.name + ' - ' + (issue.fields.assignee ? issue.fields.assignee.displayName : '') + ')</li>');
-			}
+			_(issues).each(res.writeIssueListItem);
 			res.write('</ul>');
 			res.write('</td>');
 			res.write('</tr>');
-		}
+		});
 		res.write('</tbody>');
-
 		res.write('</table>');
 
 		res.write('<table>');
-
 		res.write('<thead>');
 		res.write('<tr>');
 		res.write('<th>All Open Issues (' + results.issues.length  + ')</th>');
 		res.write('</tr>');
 		res.write('</thead>');
-
 		res.write('<tbody>');
 		res.write('<tr>');
 		res.write('<th>')
 		res.write('<ul>');
-		for (var i = 0; i < results.issues.length; i++) {
-			var issue = results.issues[i];
-			res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a>' + ' ' + issue.fields.summary + (hasPlan(issue) ? ' (has plan)' : '') + ' (' + issue.fields.status.name + ' - ' + (issue.fields.assignee ? issue.fields.assignee.displayName : '') + ')</li>');
-		}
+		_(results.issues).each(res.writeIssueListItem);
 		res.write('</ul>');
 		res.write('</th>')
 		res.write('</tr>');
 		res.write('</tbody>');
-
 		res.write('</table>');
 
 		res.write('</body>');
