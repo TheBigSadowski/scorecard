@@ -63,11 +63,14 @@ var tracks = [
 function color(issues, theme, track) {
 	var issues = matching(issues, theme, track);
 	if (issues.length > 0) {
-		for (var i = 0; i < issues.length; i++) {
+		return _(issues).all(hasPlan)
+			? 'yellow'
+			: 'red';
+		/*for (var i = 0; i < issues.length; i++) {
 			var issue = issues[i];
 			if (!hasPlan(issue)) return 'red'
 		}
-		return 'yellow';
+		return 'yellow';*/
 	}
 	return 'green';
 }
