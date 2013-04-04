@@ -2,7 +2,6 @@
 var http = require('http');
 var fs = require('fs');
 var _ = require('underscore');
-var async = require('async');
 
 var config = {
 	host: process.env.JIRA_HOST || 'linkshare.jira.com',

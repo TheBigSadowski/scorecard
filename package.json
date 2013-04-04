@@ -6,7 +6,6 @@
     "npm": "1.2.x"
   },
   "dependencies": {
-   "underscore": "*",
-   "async": "*"
+   "underscore": "*"
   }
 }
