@@ -14,11 +14,6 @@ var port = process.env.PORT || 8888;
 
 var auth = 'Basic ' + new Buffer(config.user+ ':' + config.password).toString('base64');
 
-function search(jql, callback) {
-	var path = '/rest/api/latest/search?jql=' + escape(jql) + '&fields=key,summary,status,labels,description,customfield_11910,assignee,components&maxResults=1000';
-	jira(path, callback);
-}
-
 var component = function (name) {
 	return function(issue) {
 		return _(issue.fields.components).any(function (c) { return c.name == name; });
@@ -54,7 +49,7 @@ var tracks = [
 	{ name: 'Tracking', matches: component('Tracking') },
 	{ name: 'Dashboard', matches: component('UX') },
 	{ name: 'LNK', matches: label("Track:LNK") },
-	{ name: 'CR', matches: label('Track:LNK') },
+	{ name: 'CR', matches: label('Track:CR') },
 	{ name: 'ANA', matches: component('Analytics') },
 	{ name: 'DX', matches: component('Data Exchange') }
 ];
@@ -79,7 +74,8 @@ function matching(issues, themeOrTrack) {
 var css = fs.readFileSync('./style.css', 'utf8');
 
 var server = http.createServer(function (req, res) {
-	var jql = 'labels in (' + getThemesForQuery() + ') and Status not in (Closed, Resolved) ORDER BY Rank ASC';
+	var themesForQuery = _(themes).map(function(t) { return '"Theme:'+t.name+'"'; }).join(', ');
+	var jql = 'labels in ('+themesForQuery+') and Status not in (Closed, Resolved) ORDER BY Rank ASC';
 	search(jql, function (err, results) {
 		if (err) {
 			throw err;
@@ -195,6 +191,11 @@ server.listen(port);
 console.log('listening on port ' + port);
 
 
+function search(jql, callback) {
+	var path = '/rest/api/latest/search?jql=' + escape(jql) + '&fields=key,summary,status,labels,description,customfield_11910,assignee,components&maxResults=1000';
+	jira(path, callback);
+}
+
 function jira(path, callback) {
 	var options = {
 		hostname: 'linkshare.jira.com',
@@ -219,8 +220,4 @@ function jira(path, callback) {
 			}
 		});
 	});
-}
-
-function getThemesForQuery() {
-	return _(themes).map(function(t) { return '"Theme:'+t.name+'"'; }).join(', ');
 }
