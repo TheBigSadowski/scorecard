@@ -97,6 +97,25 @@ var server = http.createServer(function (req, res) {
 		res.writeIssueListItem = function (issue) {
 			res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a>' + ' ' + issue.fields.summary + (hasPlan(issue) ? ' (has plan)' : '') + ' (' + issue.fields.status.name + ' - ' + (issue.fields.assignee ? issue.fields.assignee.displayName : '') + ')</li>');
 		};
+		res.writeIssuesTableCell = function (issues) {
+			res.write('<td class="' + color(issues) + '">');
+			res.write('<ul>');
+			if ('/overview' == req.url) {
+				var issuesWithPlan = _(issues).filter(hasPlan);
+				var issuesWithoutPlan = _(issues).difference(issuesWithPlan);
+				if (issuesWithPlan.length > 0) {
+					res.write('<li><em>'+issuesWithPlan.length + (issuesWithPlan.length == 1 ? ' has a plan' : ' have plans') + '</em></li>');
+				}
+				if (issuesWithoutPlan.length > 0) {
+					res.write('<li><strong>'+issuesWithoutPlan.length + (issuesWithoutPlan.length == 1 ? ' without a plan' : ' without plans') + '</strong></li>');
+				}
+				
+			} else {
+				_(issues).each(res.writeIssueListItem);
+			}
+			res.write('</ul>');
+			res.write('</td>');
+		}
 		res.writeHead(200, { 'content-type': 'text/html' });
 		res.write('<!DOCTYPE html>');
 		res.write('<html>');
@@ -126,11 +145,7 @@ var server = http.createServer(function (req, res) {
 			res.write('<th>' + theme.name + ' (' + themeIssues.length + ' open)</th>');
 			_(tracks).each(function (track) {
 				var issues = matching(themeIssues, track);
-				res.write('<td class="' + color(issues) + '">');
-				res.write('<ul>');
-				_(issues).each(res.writeIssueListItem);
-				res.write('</ul>');
-				res.write('</td>');
+				res.writeIssuesTableCell(issues);
 			});
 			res.write('</tr>');
 		});
@@ -151,11 +166,7 @@ var server = http.createServer(function (req, res) {
 			var issues = matching(results.issues, theme);
 			res.write('<tr>');
 			res.write('<th>' + theme.name + '</th>');
-			res.write('<td class="' + color(issues) + '">');
-			res.write('<ul>');
-			_(issues).each(res.writeIssueListItem);
-			res.write('</ul>');
-			res.write('</td>');
+			res.writeIssuesTableCell(issues);
 			res.write('</tr>');
 		});
 		res.write('</tbody>');
@@ -169,11 +180,7 @@ var server = http.createServer(function (req, res) {
 		res.write('</thead>');
 		res.write('<tbody>');
 		res.write('<tr>');
-		res.write('<th>')
-		res.write('<ul>');
-		_(results.issues).each(res.writeIssueListItem);
-		res.write('</ul>');
-		res.write('</th>')
+		res.writeIssuesTableCell(results.issues);
 		res.write('</tr>');
 		res.write('</tbody>');
 		res.write('</table>');
