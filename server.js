@@ -61,7 +61,6 @@ var tracks = [
 ];
 
 function color(issues, theme, track) {
-	//var issues = matching(issues, theme, track);
 	return issues.length == 0
 		? 'green'
 		: _(issues).all(hasPlan)
@@ -74,13 +73,8 @@ function hasPlan(issue) {
 	return issue.fields.customfield_11910.value == 'Yes';
 }
 
-function matching(issues, theme, track) {
-	return _(issues).filter(function (issue) { return matches(issue, theme, track); });
-}
-
-function matches(issue, theme, track) {
-	return (theme == null || theme.matches(issue))
-		&& (track == null || track.matches(issue));
+function matching(issues, themeOrTrack) {
+	return _(issues).filter(themeOrTrack.matches);
 }
 
 var css = fs.readFileSync('./style.css', 'utf8');
@@ -98,16 +92,16 @@ var server = http.createServer(function (req, res) {
 			res.write('<li><a href="https://linkshare.jira.com/browse/' + issue.key + '">' + issue.key + '</a>' + ' ' + issue.fields.summary + (hasPlan(issue) ? ' (has plan)' : '') + ' (' + issue.fields.status.name + ' - ' + (issue.fields.assignee ? issue.fields.assignee.displayName : '') + ')</li>');
 		};
 		res.writeIssuesTableCell = function (issues) {
-			res.write('<td class="' + color(issues) + '">');
+			res.write('<td class="'+color(issues)+'">');
 			res.write('<ul>');
 			if ('/overview' == req.url) {
 				var issuesWithPlan = _(issues).filter(hasPlan);
 				var issuesWithoutPlan = _(issues).difference(issuesWithPlan);
 				if (issuesWithPlan.length > 0) {
-					res.write('<li><em>'+issuesWithPlan.length + (issuesWithPlan.length == 1 ? ' has a plan' : ' have plans') + '</em></li>');
+					res.write('<li><em>'+issuesWithPlan.length+' with a plan</em></li>');
 				}
 				if (issuesWithoutPlan.length > 0) {
-					res.write('<li><strong>'+issuesWithoutPlan.length + (issuesWithoutPlan.length == 1 ? ' without a plan' : ' without plans') + '</strong></li>');
+					res.write('<li><strong>'+issuesWithoutPlan.length+' without a plan</strong></li>');
 				}
 				
 			} else {
@@ -231,52 +225,3 @@ function jira(path, callback) {
 function getThemesForQuery() {
 	return _(themes).map(function(t) { return '"Theme:'+t.name+'"'; }).join(', ');
 }
-
-
-function getVersions(project, callback) {
-	jira('/rest/api/latest/project/' + project + '/versions', function (err, results) {
-		async.map(results, function(version, callback) {
-			search('fixVersion = ' + version.id + ' AND issuetype in standardIssueTypes()', function(err, issues) {
-				version.issues = issues;
-				callback(null, version);
-			});
-		}, function(err, mapped) {
-			callback(err, mapped);
-		});
-	});
-}
-
-/*
-jira('/rest/api/latest/field', function (err, results) {
-	_(results).each(function (field) {
-		console.log(field.name + ' => ' + field.id);
-	})
-});
-
-getVersions('PB', function(err, results) {
-	_.chain(results)
-		.where({ archived: false })
-		.sortBy(function(version) { return version.releaseDate; })
-		.reverse()
-		.each(function(version) {
-			console.log(version.name);
-			_(version.issues.issues)
-				.each(function(issue) {
-					console.log('  ' + issue.fields.summary);
-				});
-		});
-});
-
-getVersions('PB', function(err, results) {
-	_(results).each(function(version) {
-		console.log(version.description);
-	});
-});
-
-search('Sprint in closedSprints()', function(err, results) {
-	console.log('Closed sprints:');
-	_(results.issues).each(function(issue) {
-		console.log(issue)
-	});
-});
-*/
