@@ -128,6 +128,14 @@ var server = http.createServer(function (req, res) {
 		res.write('</head>');
 		res.write('<body>');
 
+		res.write('<p>');
+		res.write('<a href="https://linkshare.jira.com/secure/RapidBoard.jspa?rapidView=118">Manage scorecard issues</a> ');
+		if ('/overview' == req.url) {
+			res.write('<a href="/">Switch to details mode</a> ');
+		} else {
+			res.write('<a href="/overview">Switch to overview mode</a> ');
+		}
+
 		res.write('<table>');
 		res.write('<thead>');
 		res.write('<tr>');
@@ -151,8 +159,6 @@ var server = http.createServer(function (req, res) {
 		});
 		res.write('</tbody>');
 		res.write('</table>');
-
-		res.write('<p><a href="https://linkshare.jira.com/secure/RapidBoard.jspa?rapidView=118">Manage scorecard issues</a>')
 
 		res.write('<table>');
 		res.write('<thead>');
