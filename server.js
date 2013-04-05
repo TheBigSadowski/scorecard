@@ -47,7 +47,7 @@ var themes = [
 var tracks = [
 	{ name: 'BP', matches: component('Billing & Payments') },
 	{ name: 'Tracking', matches: component('Tracking') },
-	{ name: 'Dashboard', matches: component('UX') },
+	{ name: 'Dashboard', matches: function (issue) { return component('UX')(issue) && (label('Advertiser')(issue) || label('Publisher')(issue)); } },
 	{ name: 'LNK', matches: label("Track:LNK") },
 	{ name: 'CR', matches: label('Track:CR') },
 	{ name: 'ANA', matches: component('Analytics') },
